@@ -375,7 +375,6 @@
     </div>
 
     <!-- MODAL: TASK DETAIL -->
-    <!-- Updated structure to handle overflow correctly -->
     <div id="modal-detail" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-dark-surface w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh]">
             
@@ -825,31 +824,36 @@
             if (state.viewMode === 'folder') {
                 container.className = "space-y-8 transition-all duration-500 ease-in-out transform origin-top pb-12"; 
                 let relevantCategories = [...new Set([...state.categories, ...displayTasks.map(t => t.category)])];
+                
+                // Sort Categories (Only apply sorting here if it's task-based logic inside a folder view context)
                 relevantCategories.sort((a, b) => {
                     if (sortType === 'alpha') return a.localeCompare(b);
                     if (sortType === 'deadline') {
+                        // ... existing deadline sort logic for categories ...
                         const tasksA = displayTasks.filter(t => t.category === a);
                         const minDateA = tasksA.length > 0 ? Math.min(...tasksA.map(t => new Date(t.deadline).getTime())) : Infinity;
                         const tasksB = displayTasks.filter(t => t.category === b);
                         const minDateB = tasksB.length > 0 ? Math.min(...tasksB.map(t => new Date(t.deadline).getTime())) : Infinity;
-                        if (minDateA === minDateB) return a.localeCompare(b);
                         return minDateA - minDateB;
                     }
                     if (sortType === 'most_tasks') {
                         const countA = displayTasks.filter(t => t.category === a).length;
                         const countB = displayTasks.filter(t => t.category === b).length;
-                        if (countA === countB) return a.localeCompare(b);
                         return countB - countA;
                     }
                     return 0;
                 });
+                
                 relevantCategories.forEach(cat => {
                     const tasksInCat = displayTasks.filter(t => t.category === cat);
+                    
+                    // Sort tasks inside the folder
                     tasksInCat.sort((a, b) => {
-                        if (sortType === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
-                        if (sortType === 'alpha') return a.title.localeCompare(b.title);
-                        return 0;
+                         if (sortType === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
+                         if (sortType === 'alpha') return a.title.localeCompare(b.title);
+                         return 0;
                     });
+                    
                     const section = document.createElement('div');
                     section.className = "mb-8 border border-gray-200 dark:border-gray-700 rounded-3xl p-6 bg-white/50 dark:bg-slate-800/30";
                     const headerHTML = `
@@ -885,12 +889,6 @@
                 displayTasks.sort((a, b) => {
                     if (sortType === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
                     if (sortType === 'alpha') return a.title.localeCompare(b.title);
-                    if (sortType === 'most_tasks') {
-                        const countA = displayTasks.filter(t => t.category === a.category).length;
-                        const countB = displayTasks.filter(t => t.category === b.category).length;
-                        if (countB !== countA) return countB - countA;
-                        return a.category.localeCompare(b.category);
-                    }
                     return 0;
                 });
                 displayTasks.forEach(task => {
@@ -904,24 +902,48 @@
             const dateObj = new Date(task.deadline);
             const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
             const timeStr = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+            
+            // Check Late Status
+            const now = new Date();
+            const isLate = now > dateObj;
+
             let priorityClass = "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
             let priorityLabel = "RENDAH";
             let dotColor = "bg-green-500";
+            let stripColor = "bg-green-500";
+
             if(task.priority === 'sedang') {
                 priorityClass = "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
                 priorityLabel = "SEDANG";
                 dotColor = "bg-yellow-500";
+                stripColor = "bg-yellow-500";
             }
             if(task.priority === 'tinggi') {
                 priorityClass = "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
                 priorityLabel = "TINGGI";
                 dotColor = "bg-red-500";
+                stripColor = "bg-red-500";
             }
+
+            // OVERRIDE FOR LATE TASKS
+            if (isLate) {
+                priorityClass = "bg-rose-600 text-white dark:bg-rose-700 border border-rose-700";
+                priorityLabel = "TELAT";
+                dotColor = "bg-white animate-pulse"; 
+                stripColor = "bg-rose-600";
+            }
+
             const card = document.createElement('div');
-            card.className = "bg-white dark:bg-dark-surface p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col justify-between";
+            card.className = "bg-white dark:bg-dark-surface p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col justify-between relative overflow-hidden";
             card.onclick = () => openTaskDetail(task.id);
-            card.innerHTML = `
-                <div>
+            
+            // Add Strip
+            const priorityStrip = document.createElement('div');
+            priorityStrip.className = `absolute left-0 top-4 bottom-4 w-1.5 rounded-r-lg ${stripColor}`;
+            card.appendChild(priorityStrip);
+
+            card.innerHTML += `
+                <div class="pl-4">
                     <div class="flex justify-between items-start mb-4">
                         <span class="inline-block px-3 py-1 rounded-lg bg-[#e0e7ff] dark:bg-indigo-900/30 text-primary font-bold text-[10px] tracking-wider uppercase">
                             ${task.category}
@@ -934,7 +956,7 @@
                         ${task.title}
                     </h3>
                 </div>
-                <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm font-medium">
+                <div class="pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 ${isLate ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-500 dark:text-gray-400'} text-sm font-medium">
                     <i class="far fa-clock"></i>
                     <span>${dateStr}, ${timeStr}</span>
                 </div>
@@ -1069,9 +1091,8 @@
         // --- UI UTILITIES ---
         function updateSortOptions(view) {
             const select = document.getElementById('filter-sort');
-            // Store current value to restore if possible
             const currentVal = select.value;
-            select.innerHTML = ''; // Clear existing
+            select.innerHTML = ''; 
 
             if (view === 'folder') {
                  select.innerHTML += `<option value="deadline">Deadline Terdekat</option>`;
@@ -1083,14 +1104,12 @@
                 select.innerHTML += `<option value="alpha">Abjad (A-Z)</option>`;
             }
             
-            // Try to restore previous selection if it exists in new options, else default to first
             if (select.querySelector(`option[value="${currentVal}"]`)) {
                 select.value = currentVal;
             } else {
                 select.selectedIndex = 0;
             }
 
-            // Re-init UI
             initCustomSelects();
         }
 
