@@ -349,7 +349,7 @@
                         <div>
                             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Kategori</label>
                             <div class="mt-2">
-                                <select id="task-category" required class="w-full">
+                                <select id="task-category" class="w-full">
                                     <!-- Options populated by JS -->
                                 </select>
                             </div>
@@ -746,11 +746,21 @@
             const select = document.getElementById('task-category');
             if (!select) return;
             select.innerHTML = '';
-            state.categories.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat; opt.textContent = cat;
-                select.appendChild(opt);
+            
+            // FIX: Ensure there's a default selection if available
+            state.categories.forEach((cat, index) => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                if (index === 0) option.selected = true; // Select first by default
+                select.appendChild(option);
             });
+            
+            // Trigger update
+            if (state.categories.length > 0) {
+                select.value = state.categories[0];
+            }
+
             initCustomSelects();
         }
 
@@ -778,6 +788,40 @@
             el.textContent = style.label + (p==='telat'?' ⚠️':''); 
             el.className = `font-bold ${c}`;
         }
+
+        els.addTaskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+             // FIX: Validasi Manual Kategori
+            const titleVal = document.getElementById('task-title').value;
+            const categoryVal = document.getElementById('task-category').value;
+            const deadlineVal = document.getElementById('task-deadline').value;
+
+            if (!titleVal) { alert("Judul tugas harus diisi!"); return; }
+            if (!categoryVal) { alert("Mohon pilih kategori!"); return; }
+            if (!deadlineVal) { alert("Deadline harus diisi!"); return; }
+
+            const autoPriority = calculatePriority(deadlineVal);
+
+            const newTask = {
+                id: Date.now(),
+                title: titleVal,
+                category: categoryVal,
+                priority: autoPriority, 
+                deadline: deadlineVal,
+                notes: document.getElementById('task-notes').value,
+                completed: false,
+                createdAt: new Date().toISOString(),
+                sentAlerts: [] 
+            };
+            state.tasks.push(newTask);
+            saveTasks();
+            renderTasks();
+            renderCalendar();
+            closeModal('modal-add');
+            els.addTaskForm.reset();
+            updatePriorityPreview(); 
+        });
 
         function saveTasks() { localStorage.setItem('focusTask_tasks', JSON.stringify(state.tasks)); }
 
