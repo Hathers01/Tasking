@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasking - Manajemen Tugas</title>
+    <title>Tasking - Level Up Your Life</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -47,6 +47,13 @@
                     },
                     animation: {
                         'bounce-short': 'bounce 1s infinite 2',
+                        'float-up': 'floatUp 1s ease-out forwards',
+                    },
+                    keyframes: {
+                        floatUp: {
+                            '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+                            '100%': { opacity: '0', transform: 'translateY(-50px) scale(1.5)' },
+                        }
                     }
                 }
             }
@@ -60,54 +67,23 @@
             --color-primary-light: #e0e7ff;
         }
 
-        .theme-pink {
-            --color-primary: #ec4899;
-            --color-primary-hover: #db2777;
-            --color-primary-light: #fce7f3;
-        }
-        .theme-orange {
-            --color-primary: #f97316;
-            --color-primary-hover: #ea580c;
-            --color-primary-light: #ffedd5;
-        }
-        .theme-teal {
-            --color-primary: #14b8a6;
-            --color-primary-hover: #0d9488;
-            --color-primary-light: #ccfbf1;
-        }
-        .theme-blue {
-            --color-primary: #3b82f6;
-            --color-primary-hover: #2563eb;
-            --color-primary-light: #dbeafe;
-        }
+        .theme-pink { --color-primary: #ec4899; --color-primary-hover: #db2777; --color-primary-light: #fce7f3; }
+        .theme-orange { --color-primary: #f97316; --color-primary-hover: #ea580c; --color-primary-light: #ffedd5; }
+        .theme-teal { --color-primary: #14b8a6; --color-primary-hover: #0d9488; --color-primary-light: #ccfbf1; }
+        .theme-blue { --color-primary: #3b82f6; --color-primary-hover: #2563eb; --color-primary-light: #dbeafe; }
 
         .dark .glass {
             background: rgba(15, 23, 42, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
-        body {
-            transition: background-color 0.3s, color 0.3s;
-        }
-        
-        /* Custom Scrollbar */
+        body { transition: background-color 0.3s, color 0.3s; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Calendar Styles */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .calendar-day { min-height: 80px; border-radius: 12px; padding: 8px; transition: all 0.2s; background-color: rgba(255,255,255,0.5); border: 1px solid transparent; }
-        .dark .calendar-day { background-color: rgba(30, 41, 59, 0.5); }
-        .calendar-day:hover { background-color: var(--color-primary-light); transform: translateY(-2px); }
-        .dark .calendar-day:hover { background-color: #334155; }
-        .task-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin: 2px; }
-        
         .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-        
-        /* Custom Select */
         .custom-select-wrapper { position: relative; user-select: none; }
         
         /* Effect for Epic Priority Change */
@@ -116,9 +92,7 @@
             50% { transform: scale(1.02); filter: brightness(1.1); }
             100% { transform: scale(1); filter: brightness(1); }
         }
-        .priority-changed-anim {
-            animation: highlight-change 0.8s ease-in-out;
-        }
+        .priority-changed-anim { animation: highlight-change 0.8s ease-in-out; }
     </style>
 </head>
 <body class="bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text min-h-screen flex flex-col font-sans selection:bg-primary selection:text-white">
@@ -130,19 +104,51 @@
         <div class="absolute -bottom-8 left-1/3 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
     </div>
 
-    <!-- MAIN APP (Langsung Tampil) -->
+    <!-- MAIN APP -->
     <div id="main-app" class="flex flex-col h-screen overflow-hidden">
         
         <!-- Navbar -->
         <nav class="glass border-b border-gray-200/50 dark:border-gray-700/50 p-4 px-6 flex justify-between items-center z-20">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md" id="user-avatar">
-                    <i class="fas fa-check-double"></i>
+            <div class="flex items-center gap-2 sm:gap-6">
+                <!-- BRANDING -->
+                <div class="flex items-center gap-2 cursor-pointer group" onclick="location.reload()" title="Refresh / Home">
+                    <div class="w-9 h-9 bg-white dark:bg-slate-800 text-primary rounded-xl flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-105 transition-transform">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <h1 class="font-extrabold text-xl tracking-tight hidden md:block bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">Tasking</h1>
                 </div>
-                <div>
-                    <h2 class="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600 cursor-pointer" onclick="togglePremiumStatus()">Tasking <span id="pro-badge" class="hidden text-[10px] bg-premium text-white px-1.5 py-0.5 rounded ml-1 align-top shadow-sm">PRO</span></h2>
+
+                <!-- DIVIDER (Desktop only) -->
+                <div class="hidden md:block h-6 w-px bg-gray-300 dark:bg-gray-700"></div>
+
+                <!-- GAMIFICATION PROFILE -->
+                <div class="flex items-center gap-3">
+                    <div class="relative cursor-pointer" onclick="togglePremiumStatus()" title="Tap for Dev Mode (Secret)">
+                        <!-- Added id="avatar-container" for dynamic border color -->
+                        <div id="avatar-container" class="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center text-white font-extrabold text-sm shadow-md border-2 border-white dark:border-slate-700 transform rotate-2 hover:rotate-0 transition-all duration-300">
+                            <span id="level-number">1</span>
+                        </div>
+                        <div class="absolute -bottom-1 -right-1 bg-yellow-400 text-[8px] font-black px-1 rounded text-black border border-white shadow-sm tracking-widest">LVL</div>
+                    </div>
+                    
+                    <div class="hidden sm:flex flex-col">
+                        <div class="flex items-center gap-1.5">
+                            <h2 class="font-bold text-xs tracking-tight text-gray-800 dark:text-gray-100">
+                                <span id="user-title">Novice Tasker</span>
+                            </h2>
+                            <span id="pro-badge" class="hidden text-[8px] bg-premium text-white px-1 py-0.5 rounded shadow-sm font-bold tracking-wider">PRO</span>
+                        </div>
+                        <!-- XP BAR -->
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <div class="w-20 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div id="xp-bar" class="h-full bg-gradient-to-r from-primary to-purple-500 transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <span id="xp-text" class="text-[8px] font-mono font-bold text-gray-400 leading-none">0 XP</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
             <div class="flex gap-3 items-center">
                 <button onclick="openModal('modal-settings')" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 transition flex items-center justify-center" title="Pengaturan Tampilan">
                     <i class="fas fa-palette"></i>
@@ -182,6 +188,30 @@
                         <button onclick="openAddTaskModal()" class="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 font-bold">
                             <i class="fas fa-plus"></i> Tambah Tugas
                         </button>
+                    </div>
+                </div>
+
+                <!-- SLOT IKLAN (AD BANNER) - Business Requirement -->
+                <!-- Iklan ini hanya muncul untuk user gratis -->
+                <div id="ad-banner" class="mb-8 hidden animate-bounce-short">
+                    <div class="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] rounded-2xl">
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="h-12 w-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center text-2xl shrink-0">
+                                    📢
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-[10px] font-bold bg-gray-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-gray-500">ADS</span>
+                                        <h4 class="font-bold text-sm sm:text-base text-gray-800 dark:text-white">Promo Spesial Mahasiswa!</h4>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Dapatkan diskon 50% untuk kursus coding di <span class="underline decoration-primary cursor-pointer hover:text-primary">EduTech Partner</span>.</p>
+                                </div>
+                            </div>
+                            <button onclick="openModal('modal-premium')" class="whitespace-nowrap text-xs font-bold text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition flex items-center gap-1 group">
+                                <i class="fas fa-ban group-hover:scale-110 transition"></i> Hapus Iklan
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -328,16 +358,13 @@
     </div>
 
     <!-- MODAL: ADD TASK -->
-    <!-- Updated with max-h, flex-col, overflow for better scroll handling -->
     <div id="modal-add" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-dark-surface w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 transform transition-all scale-100 flex flex-col max-h-[90vh]">
-            <!-- Header (Sticky) -->
             <div class="p-8 pb-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-dark-surface rounded-t-2xl z-10 shrink-0">
                 <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">Tugas Baru ✨</h2>
                 <button onclick="closeModal('modal-add')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-500 hover:text-red-500 transition"><i class="fas fa-times"></i></button>
             </div>
             
-            <!-- Scrollable Content -->
             <div class="p-8 pt-4 overflow-y-auto custom-scrollbar flex-1">
                 <form id="add-task-form" class="space-y-5">
                     <div>
@@ -349,7 +376,7 @@
                         <div>
                             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Kategori</label>
                             <div class="mt-2">
-                                <select id="task-category" class="w-full">
+                                <select id="task-category" required class="w-full">
                                     <!-- Options populated by JS -->
                                 </select>
                             </div>
@@ -431,7 +458,8 @@
     <div id="modal-celebration" class="fixed inset-0 z-50 hidden bg-slate-900/90 backdrop-blur flex items-center justify-center p-4 text-center">
         <div class="transform transition-all animate-bounce-short">
             <div class="text-8xl mb-6 filter drop-shadow-lg">🎉</div>
-            <h2 class="text-4xl font-black mb-3 text-white">Slay! 🔥</h2>
+            <div class="text-3xl font-black text-yellow-400 mb-2 mt-4 drop-shadow-md" id="xp-gain-anim">+100 XP</div>
+            <h2 class="text-4xl font-black mb-3 text-white">Level Up! 🔥</h2>
             <p id="celebration-msg" class="text-gray-300 mb-8 text-xl font-medium max-w-xs mx-auto">Tugas selesai.</p>
             <button onclick="closeCelebration()" class="px-10 py-4 bg-white text-primary font-bold rounded-full hover:scale-105 transition shadow-xl shadow-white/20">Lanjut Gan!</button>
         </div>
@@ -454,7 +482,10 @@
             viewMode: 'list', 
             currentDate: new Date(),
             currentTaskView: null,
-            isPremium: localStorage.getItem('focusTask_premium') === 'true'
+            isPremium: localStorage.getItem('focusTask_premium') === 'true',
+            // GAMIFICATION STATE
+            xp: parseInt(localStorage.getItem('focusTask_xp')) || 0,
+            level: parseInt(localStorage.getItem('focusTask_level')) || 1
         };
 
         const els = {
@@ -466,6 +497,61 @@
             dateDisplay: document.getElementById('date-display'),
             filterSort: document.getElementById('filter-sort'),
         };
+
+        // --- GAMIFICATION LOGIC ---
+        // Define Titles based on Level
+        const TITLES = [
+            { lvl: 1, name: "Novice Tasker", color: "border-gray-200" },
+            { lvl: 3, name: "Apprentice", color: "border-green-400" },
+            { lvl: 5, name: "Productivity Pro", color: "border-blue-400" },
+            { lvl: 10, name: "Task Master", color: "border-purple-400" },
+            { lvl: 20, name: "Grandmaster", color: "border-yellow-400" },
+            { lvl: 50, name: "Godlike", color: "border-red-500" }
+        ];
+
+        function getTitleData(level) {
+            return TITLES.slice().reverse().find(t => level >= t.lvl) || TITLES[0];
+        }
+
+        function updateXPDisplay() {
+            const levelEl = document.getElementById('level-number');
+            const titleEl = document.getElementById('user-title');
+            const avatarContainer = document.getElementById('avatar-container');
+            const xpText = document.getElementById('xp-text');
+            const xpBar = document.getElementById('xp-bar');
+            
+            const nextLevelXP = state.level * 500;
+            const progress = (state.xp / nextLevelXP) * 100;
+            const currentTitleData = getTitleData(state.level);
+
+            levelEl.textContent = state.level;
+            titleEl.textContent = currentTitleData.name;
+            
+            avatarContainer.className = avatarContainer.className.replace(/border-\w+-\d+/g, '');
+            avatarContainer.classList.add(currentTitleData.color); 
+            if(!avatarContainer.classList.contains('border-4')) avatarContainer.classList.add('border-4');
+
+
+            xpText.textContent = `${state.xp}/${nextLevelXP} XP`;
+            xpBar.style.width = `${Math.min(progress, 100)}%`;
+        }
+
+        function addXP(amount) {
+            state.xp += amount;
+            const nextLevelXP = state.level * 500;
+            
+            if (state.xp >= nextLevelXP) {
+                state.level++;
+                state.xp -= nextLevelXP; 
+                
+                const newTitle = getTitleData(state.level);
+                alert(`LEVEL UP! Selamat datang di Level ${state.level} 🎉\nGelar Baru: ${newTitle.name}`);
+            }
+            
+            localStorage.setItem('focusTask_xp', state.xp);
+            localStorage.setItem('focusTask_level', state.level);
+            updateXPDisplay();
+        }
 
         // ... FREEMIUM & THEME Logic ...
         function checkPremiumFeature(featureName) {
@@ -480,19 +566,26 @@
             localStorage.setItem('focusTask_premium', 'true');
             closeModal('modal-premium');
             updateUIForPremium();
-            if (!document.getElementById('modal-category').classList.contains('hidden')) openCategoryModal();
+            if (!document.getElementById('modal-category').classList.contains('hidden')) {
+                openCategoryModal();
+            }
         }
+
         function updateUIForPremium() {
             const badge = document.getElementById('pro-badge');
             const limitInfo = document.getElementById('category-limit-info');
             const banner = document.getElementById('premium-category-banner');
+            const adBanner = document.getElementById('ad-banner'); // Referensi ke elemen iklan
+
             if (state.isPremium) {
                 if (badge) badge.classList.remove('hidden');
                 if (limitInfo) limitInfo.textContent = "User PRO: Kategori Tanpa Batas ✨";
                 if (banner) banner.classList.add('hidden');
+                if (adBanner) adBanner.classList.add('hidden'); // Sembunyikan iklan jika Premium
             } else {
                 if (badge) badge.classList.add('hidden');
                 if (state.categories.length >= 3 && banner) banner.classList.remove('hidden');
+                if (adBanner) adBanner.classList.remove('hidden'); // Tampilkan iklan jika Gratis
             }
         }
         function togglePremiumStatus() {
@@ -530,9 +623,7 @@
                 const optionsDiv = document.createElement('div');
                 optionsDiv.className = "absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl shadow-xl z-[100] overflow-hidden hidden opacity-0 transform scale-95 transition-all duration-200 origin-top max-h-60 overflow-y-auto custom-scrollbar";
                 
-                // Define toggleMenu inside the loop to capture scope variables correctly
                 const toggleMenu = (forceState) => {
-                     // Close others
                      if (forceState !== false) {
                          document.querySelectorAll('.custom-dropdown-options').forEach(el => {
                              if(el !== optionsDiv) {
@@ -542,11 +633,10 @@
                              }
                          });
                     }
-
                     let isOpen = !optionsDiv.classList.contains('hidden');
-                    if (forceState !== undefined) isOpen = !forceState; // If forceState is false, we want to close, so isOpen should be true initially to trigger close logic
+                    if (forceState !== undefined) isOpen = !forceState; 
                     
-                    if (!isOpen) { // Opening
+                    if (!isOpen) { 
                         optionsDiv.classList.remove('hidden');
                         requestAnimationFrame(() => {
                             optionsDiv.classList.remove('opacity-0', 'scale-95');
@@ -554,13 +644,12 @@
                         });
                         trigger.querySelector('.fa-chevron-down').classList.add('rotate-180');
                         trigger.classList.add('border-primary/50', 'ring-2', 'ring-primary/20'); 
-                    } else { // Closing
+                    } else { 
                         optionsDiv.classList.remove('opacity-100', 'scale-100');
                         optionsDiv.classList.add('opacity-0', 'scale-95');
                         trigger.querySelector('.fa-chevron-down').classList.remove('rotate-180');
                         trigger.classList.remove('border-primary/50', 'ring-2', 'ring-primary/20');
                         setTimeout(() => {
-                             // Only hide if it hasn't been re-opened quickly
                             if (optionsDiv.classList.contains('opacity-0')) optionsDiv.classList.add('hidden');
                         }, 200);
                     }
@@ -587,8 +676,6 @@
                 });
 
                 optionsDiv.classList.add('custom-dropdown-options');
-                
-                // Append logic fix: insert wrapper BEFORE select, then move select INTO wrapper
                 select.parentNode.insertBefore(wrapper, select);
                 wrapper.appendChild(select);
                 wrapper.appendChild(trigger);
@@ -612,6 +699,7 @@
             updateClockAndIcon();
             updateUIForPremium(); 
             startRealTimePriorityCheck();
+            updateXPDisplay(); // Init XP
         }
 
         // ... REALTIME CHECK ...
@@ -779,7 +867,6 @@
             if(!val) { el.textContent = "Pilih deadline dulu..."; el.className = "font-bold text-gray-700 dark:text-gray-200"; return; }
             const p = calculatePriority(val);
             const style = PRIORITY_STYLES[p];
-            // Just use text color from style roughly or default
             let c = "text-green-500";
             if(p === 'tinggi') c = "text-red-500";
             if(p === 'sedang') c = "text-yellow-500";
@@ -890,7 +977,7 @@
             const footerColor = t.priority === 'telat' ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-gray-500 dark:text-gray-400';
 
             const c = document.createElement('div');
-            c.id = `task-${t.id}`; // Crucial ID for animation
+            c.id = `task-${t.id}`; 
             c.className = "bg-white dark:bg-dark-surface p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 cursor-pointer group flex flex-col justify-between relative overflow-hidden";
             c.onclick = () => openTaskDetail(t.id);
             
@@ -926,7 +1013,6 @@
             if (!t) return;
             state.currentTaskView = t;
             
-            // Re-calc to ensure modal shows latest status (especially if opened right at transition)
             const currentPrio = calculatePriority(t.deadline); 
             const styles = PRIORITY_STYLES[currentPrio];
             
@@ -979,7 +1065,58 @@
 
         // ... (Other standard functions: markAsDone, delete, etc. same as before) ...
         function deleteTask(id) { if(confirm("Hapus?")) { state.tasks = state.tasks.filter(t => t.id !== id); saveTasks(); renderTasks(); renderCalendar(); closeModal('modal-detail'); } }
-        function markAsDone(id) { const t = state.tasks.find(x => x.id === id); if(t) { t.completed = true; saveTasks(); closeModal('modal-detail'); document.getElementById('modal-celebration').classList.remove('hidden'); renderTasks(); renderCalendar(); } }
+        
+        function markAsDone(id) { 
+            const t = state.tasks.find(x => x.id === id); 
+            if(t) { 
+                t.completed = true; 
+                saveTasks(); 
+                
+                // --- LOGIKA POIN DINAMIS (UPDATED) ---
+                // Hitung prioritas saat ini (real-time) untuk menentukan poin
+                // Filosofi: Reward tertinggi untuk user yang mengerjakan jauh-jauh hari (Proaktif)
+                const currentPriority = calculatePriority(t.deadline);
+                let xpGained = 0;
+                let message = "";
+
+                if (currentPriority === 'rendah') {
+                    xpGained = 200;
+                    message = "Luar biasa! Kamu sangat terencana.";
+                } else if (currentPriority === 'sedang') {
+                    xpGained = 150;
+                    message = "Kerja bagus! Tetap konsisten.";
+                } else if (currentPriority === 'tinggi') {
+                    xpGained = 100;
+                    message = "Fuh! Untung selesai sebelum deadline.";
+                } else { // Telat
+                    xpGained = 50; 
+                    message = "Lebih baik terlambat daripada tidak sama sekali.";
+                }
+
+                addXP(xpGained); 
+                
+                closeModal('modal-detail'); 
+                
+                // Update tampilan modal celebration
+                const xpAnimEl = document.getElementById('xp-gain-anim');
+                xpAnimEl.textContent = `+${xpGained} XP`;
+                
+                // Reset animasi agar bisa play ulang
+                xpAnimEl.classList.remove('animate-bounce');
+                void xpAnimEl.offsetWidth; // trigger reflow
+                xpAnimEl.classList.add('animate-bounce');
+
+                // Custom message berdasarkan poin
+                const msgEl = document.getElementById('celebration-msg');
+                msgEl.textContent = message;
+
+                document.getElementById('modal-celebration').classList.remove('hidden'); 
+                
+                renderTasks(); 
+                renderCalendar(); 
+            } 
+        }
+        
         function closeCelebration() { document.getElementById('modal-celebration').classList.add('hidden'); }
         function addToGoogleCalendar(t) {
             const s = new Date(t.deadline).toISOString().replace(/-|:|\.\d\d\d/g, "");
