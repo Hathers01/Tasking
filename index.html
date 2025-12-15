@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tasking - Level Up Your Life</title>
+    <title>Tasking - Manajemen Tugas</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -47,12 +47,13 @@
                     },
                     animation: {
                         'bounce-short': 'bounce 1s infinite 2',
-                        'float-up': 'floatUp 1s ease-out forwards',
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
-                        floatUp: {
-                            '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
-                            '100%': { opacity: '0', transform: 'translateY(-50px) scale(1.5)' },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
                         }
                     }
                 }
@@ -70,7 +71,6 @@
         .theme-pink { --color-primary: #ec4899; --color-primary-hover: #db2777; --color-primary-light: #fce7f3; }
         .theme-orange { --color-primary: #f97316; --color-primary-hover: #ea580c; --color-primary-light: #ffedd5; }
         .theme-teal { --color-primary: #14b8a6; --color-primary-hover: #0d9488; --color-primary-light: #ccfbf1; }
-        .theme-blue { --color-primary: #3b82f6; --color-primary-hover: #2563eb; --color-primary-light: #dbeafe; }
 
         .dark .glass {
             background: rgba(15, 23, 42, 0.8);
@@ -83,21 +83,29 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* CALENDAR GRID FIXES */
+        .calendar-wrapper { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day-header { text-align: center; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #9ca3af; padding-bottom: 8px; }
+        .calendar-day { min-height: 80px; padding: 6px; border-radius: 8px; background-color: rgba(243, 244, 246, 0.5); border: 1px solid transparent; display: flex; flex-direction: column; transition: all 0.2s; }
+        .dark .calendar-day { background-color: rgba(30, 41, 59, 0.5); }
+        .calendar-day:hover { background-color: var(--color-primary-light); border-color: var(--color-primary); transform: translateY(-2px); }
+        .dark .calendar-day:hover { background-color: #334155; border-color: #475569; }
+        .calendar-day.empty { background-color: transparent; border: none; pointer-events: none; }
+        .task-dot { height: 6px; width: 6px; border-radius: 50%; display: inline-block; margin: 1px; }
+        
         .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
         .custom-select-wrapper { position: relative; user-select: none; }
-        
-        /* Effect for Epic Priority Change */
+        .priority-changed-anim { animation: highlight-change 0.8s ease-in-out; }
         @keyframes highlight-change {
             0% { transform: scale(1); filter: brightness(1); }
             50% { transform: scale(1.02); filter: brightness(1.1); }
             100% { transform: scale(1); filter: brightness(1); }
         }
-        .priority-changed-anim { animation: highlight-change 0.8s ease-in-out; }
     </style>
 </head>
 <body class="bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text min-h-screen flex flex-col font-sans selection:bg-primary selection:text-white">
 
-    <!-- Decorative Blobs -->
     <div class="fixed inset-0 z-[-1] overflow-hidden pointer-events-none opacity-40 dark:opacity-20">
         <div class="absolute top-0 left-1/4 w-72 h-72 bg-primary rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div class="absolute top-0 right-1/4 w-72 h-72 bg-secondary rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
@@ -106,49 +114,16 @@
 
     <!-- MAIN APP -->
     <div id="main-app" class="flex flex-col h-screen overflow-hidden">
-        
         <!-- Navbar -->
         <nav class="glass border-b border-gray-200/50 dark:border-gray-700/50 p-4 px-6 flex justify-between items-center z-20">
-            <div class="flex items-center gap-2 sm:gap-6">
-                <!-- BRANDING -->
-                <div class="flex items-center gap-2 cursor-pointer group" onclick="location.reload()" title="Refresh / Home">
-                    <div class="w-9 h-9 bg-white dark:bg-slate-800 text-primary rounded-xl flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-700 group-hover:scale-105 transition-transform">
-                        <i class="fas fa-check-double"></i>
-                    </div>
-                    <h1 class="font-extrabold text-xl tracking-tight hidden md:block bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">Tasking</h1>
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md" id="user-avatar">
+                    <i class="fas fa-check-double"></i>
                 </div>
-
-                <!-- DIVIDER (Desktop only) -->
-                <div class="hidden md:block h-6 w-px bg-gray-300 dark:bg-gray-700"></div>
-
-                <!-- GAMIFICATION PROFILE -->
-                <div class="flex items-center gap-3">
-                    <div class="relative cursor-pointer" onclick="togglePremiumStatus()" title="Tap for Dev Mode (Secret)">
-                        <!-- Added id="avatar-container" for dynamic border color -->
-                        <div id="avatar-container" class="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center text-white font-extrabold text-sm shadow-md border-2 border-white dark:border-slate-700 transform rotate-2 hover:rotate-0 transition-all duration-300">
-                            <span id="level-number">1</span>
-                        </div>
-                        <div class="absolute -bottom-1 -right-1 bg-yellow-400 text-[8px] font-black px-1 rounded text-black border border-white shadow-sm tracking-widest">LVL</div>
-                    </div>
-                    
-                    <div class="hidden sm:flex flex-col">
-                        <div class="flex items-center gap-1.5">
-                            <h2 class="font-bold text-xs tracking-tight text-gray-800 dark:text-gray-100">
-                                <span id="user-title">Novice Tasker</span>
-                            </h2>
-                            <span id="pro-badge" class="hidden text-[8px] bg-premium text-white px-1 py-0.5 rounded shadow-sm font-bold tracking-wider">PRO</span>
-                        </div>
-                        <!-- XP BAR -->
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <div class="w-20 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                <div id="xp-bar" class="h-full bg-gradient-to-r from-primary to-purple-500 transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                            <span id="xp-text" class="text-[8px] font-mono font-bold text-gray-400 leading-none">0 XP</span>
-                        </div>
-                    </div>
+                <div>
+                    <h2 class="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600 cursor-pointer" onclick="togglePremiumStatus()">Tasking <span id="pro-badge" class="hidden text-[10px] bg-premium text-white px-1.5 py-0.5 rounded ml-1 align-top shadow-sm">PRO</span></h2>
                 </div>
             </div>
-
             <div class="flex gap-3 items-center">
                 <button onclick="openModal('modal-settings')" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-600 dark:text-gray-300 transition flex items-center justify-center" title="Pengaturan Tampilan">
                     <i class="fas fa-palette"></i>
@@ -164,13 +139,11 @@
 
         <!-- Content Area -->
         <main class="flex-1 overflow-y-auto p-4 md:p-8 relative scroll-smooth">
-            
             <div class="max-w-5xl mx-auto">
                 <!-- Header Actions -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
                     <div>
                         <h1 class="text-4xl font-extrabold tracking-tight mb-2">Daftar Tugas</h1>
-                        <!-- Clock & Date Section -->
                         <div class="flex flex-wrap items-center gap-3 text-gray-500 dark:text-gray-400 font-medium">
                             <div class="flex items-center gap-3 bg-gray-100 dark:bg-slate-800/50 px-4 py-2 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition-all hover:scale-105 cursor-default">
                                 <span id="time-icon" class="text-2xl animate-pulse">☀️</span>
@@ -191,25 +164,29 @@
                     </div>
                 </div>
 
-                <!-- SLOT IKLAN (AD BANNER) - Business Requirement -->
-                <!-- Iklan ini hanya muncul untuk user gratis -->
-                <div id="ad-banner" class="mb-8 hidden animate-bounce-short">
-                    <div class="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-[2px] rounded-2xl">
-                        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div class="flex items-center gap-4">
-                                <div class="h-12 w-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center text-2xl shrink-0">
-                                    📢
-                                </div>
-                                <div>
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="text-[10px] font-bold bg-gray-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-gray-500">ADS</span>
-                                        <h4 class="font-bold text-sm sm:text-base text-gray-800 dark:text-white">Promo Spesial Mahasiswa!</h4>
-                                    </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">Dapatkan diskon 50% untuk kursus coding di <span class="underline decoration-primary cursor-pointer hover:text-primary">EduTech Partner</span>.</p>
-                                </div>
+                <!-- NEW: MINIMALIST AD BANNER (Bandlab Style) -->
+                <div id="ad-banner" class="mb-8 hidden animate-fade-in-up group relative">
+                    <div class="absolute -inset-[1px] bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-xl opacity-70 blur-[1px] group-hover:opacity-100 transition duration-1000"></div>
+                    <div class="relative bg-white dark:bg-slate-900 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-sm">
+                        <!-- Content -->
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="h-8 w-8 bg-gradient-to-br from-orange-400 to-pink-500 rounded-lg flex items-center justify-center text-white text-sm shrink-0 shadow-sm animate-pulse-slow">
+                                <i class="fas fa-bullhorn"></i>
                             </div>
-                            <button onclick="openModal('modal-premium')" class="whitespace-nowrap text-xs font-bold text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition flex items-center gap-1 group">
-                                <i class="fas fa-ban group-hover:scale-110 transition"></i> Hapus Iklan
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 text-sm w-full">
+                                <span class="font-bold text-gray-800 dark:text-gray-100 truncate">Sstt.. Butuh Joki Tugas? 🤫</span>
+                                <span class="hidden sm:inline text-gray-300 dark:text-gray-600">•</span>
+                                <span class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm truncate">Canda deng. Upgrade <span class="font-bold text-primary cursor-pointer hover:underline" onclick="openModal('modal-premium')">Tasking PRO</span> biar makin semangat!</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button onclick="openModal('modal-premium')" class="hidden sm:block whitespace-nowrap px-4 py-1.5 bg-black text-white dark:bg-white dark:text-black rounded-lg text-xs font-bold hover:scale-105 transition shadow-md">
+                                Lihat Paket
+                            </button>
+                            <button onclick="dismissAd()" class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 transition rounded-full hover:bg-gray-100 dark:hover:bg-slate-800" title="Tutup Iklan">
+                                <i class="fas fa-times text-xs"></i>
                             </button>
                         </div>
                     </div>
@@ -229,7 +206,6 @@
                              <select id="filter-sort" onchange="renderTasks()">
                                 <option value="deadline">Deadline Terdekat</option>
                                 <option value="alpha">Abjad (A-Z)</option>
-                                <!-- Option 'Tugas Terbanyak' will be injected here via JS if needed -->
                             </select>
                         </div>
                     </div>
@@ -250,17 +226,25 @@
                             <i class="fab fa-google"></i> Buka GCal
                         </a>
                     </div>
-                    <div class="grid grid-cols-7 text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
-                        <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+                    <!-- Calendar Header -->
+                    <div class="calendar-wrapper mb-2">
+                        <div class="calendar-day-header">Min</div>
+                        <div class="calendar-day-header">Sen</div>
+                        <div class="calendar-day-header">Sel</div>
+                        <div class="calendar-day-header">Rab</div>
+                        <div class="calendar-day-header">Kam</div>
+                        <div class="calendar-day-header">Jum</div>
+                        <div class="calendar-day-header">Sab</div>
                     </div>
-                    <div id="calendar-body" class="calendar-grid"></div>
-                    <div class="mt-6 flex gap-4 text-xs font-medium justify-center">
+                    <!-- Body Grid -->
+                    <div id="calendar-body" class="calendar-wrapper"></div>
+                    
+                    <div class="mt-6 flex gap-4 text-xs font-medium justify-center pt-4 border-t border-gray-100 dark:border-gray-700">
                          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-400"></span> Tinggi</div>
                          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-400"></span> Sedang</div>
                          <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-400"></span> Rendah</div>
                     </div>
                 </div>
-
             </div>
         </main>
     </div>
@@ -272,25 +256,17 @@
                 <h3 class="text-xl font-bold">Tampilan</h3>
                 <button onclick="closeModal('modal-settings')" class="text-gray-400 hover:text-black dark:hover:text-white"><i class="fas fa-times"></i></button>
             </div>
-
-            <!-- Dark Mode Toggle -->
             <div class="flex justify-between items-center mb-6 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">
                         <i id="theme-modal-icon" class="fas fa-moon text-primary"></i>
                     </div>
-                    <div>
-                        <p class="font-bold text-sm">Mode Gelap</p>
-                        <p class="text-xs text-gray-500">Nyaman di mata</p>
-                    </div>
+                    <div><p class="font-bold text-sm">Mode Gelap</p><p class="text-xs text-gray-500">Nyaman di mata</p></div>
                 </div>
                 <button onclick="toggleTheme()" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 dark:bg-primary transition-colors">
-                    <span class="sr-only">Toggle dark mode</span>
                     <span id="dark-mode-toggle-circle" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1 dark:translate-x-6"></span>
                 </button>
             </div>
-
-            <!-- Color Theme Picker -->
             <div>
                 <div class="flex justify-between items-center mb-3">
                     <p class="font-bold text-sm">Warna Tema</p>
@@ -302,7 +278,6 @@
                     <button onclick="changeColorTheme('theme-orange')" class="h-10 rounded-full bg-[#f97316] ring-2 ring-offset-2 ring-transparent hover:ring-gray-300 focus:ring-black dark:ring-offset-slate-800"></button>
                     <button onclick="changeColorTheme('theme-teal')" class="h-10 rounded-full bg-[#14b8a6] ring-2 ring-offset-2 ring-transparent hover:ring-gray-300 focus:ring-black dark:ring-offset-slate-800"></button>
                 </div>
-                <p class="text-xs text-gray-400 mt-2 text-center">Pilih warna aksen favoritmu.</p>
             </div>
         </div>
     </div>
@@ -310,16 +285,10 @@
     <!-- MODAL: ADD CATEGORY -->
     <div id="modal-category" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-dark-surface w-full max-w-sm rounded-2xl shadow-2xl p-6 border border-gray-100 dark:border-gray-700 transform transition-all scale-100 relative overflow-hidden">
-            <!-- Premium Banner -->
-            <div id="premium-category-banner" class="hidden absolute top-0 left-0 right-0 bg-premium text-white text-xs font-bold text-center py-1">
-                Kategori Penuh (3/3). Upgrade ke PRO!
-            </div>
-
+            <div id="premium-category-banner" class="hidden absolute top-0 left-0 right-0 bg-premium text-white text-xs font-bold text-center py-1">Kategori Penuh (3/3). Upgrade ke PRO!</div>
             <h3 class="text-xl font-bold mb-4 mt-2">Kelola Kategori</h3>
             <p id="category-limit-info" class="text-xs text-gray-500 mb-3">User Gratis: Maksimal 3 Kategori.</p>
-            
             <div id="current-categories" class="flex flex-wrap gap-2 mb-4 max-h-32 overflow-y-auto"></div>
-            
             <form id="add-category-form" class="mt-2">
                 <label class="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Kategori Baru</label>
                 <div class="flex gap-2 mt-1">
@@ -327,33 +296,74 @@
                     <button type="submit" class="bg-black text-white dark:bg-white dark:text-black p-2 rounded-xl hover:opacity-80"><i class="fas fa-plus"></i></button>
                 </div>
             </form>
-            
             <button onclick="closeModal('modal-category')" class="w-full mt-4 py-2 text-gray-500 hover:text-black dark:hover:text-white font-bold text-sm">Tutup</button>
         </div>
     </div>
 
-    <!-- MODAL: PREMIUM UPSELL -->
+    <!-- MODAL: PREMIUM UPSELL (Pop-up Promo) -->
     <div id="modal-premium" class="fixed inset-0 z-[110] hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-dark-surface w-full max-w-sm rounded-3xl shadow-2xl p-8 border-2 border-premium transform transition-all scale-100 text-center relative">
             <button onclick="closeModal('modal-premium')" class="absolute top-4 right-4 text-gray-400 hover:text-black dark:hover:text-white"><i class="fas fa-times"></i></button>
-            
-            <div class="w-16 h-16 bg-premium/20 text-premium rounded-full flex items-center justify-center mx-auto mb-4 text-3xl animate-bounce-short">
-                <i class="fas fa-crown"></i>
-            </div>
-            
+            <div class="w-16 h-16 bg-premium/20 text-premium rounded-full flex items-center justify-center mx-auto mb-4 text-3xl animate-bounce-short"><i class="fas fa-crown"></i></div>
             <h2 class="text-2xl font-black mb-2 text-gray-900 dark:text-white">Upgrade ke PRO</h2>
             <p class="text-gray-500 text-sm mb-6">Buka potensi penuh produktivitasmu.</p>
-            
             <ul class="text-left space-y-3 mb-8 text-sm text-gray-600 dark:text-gray-300">
                 <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Kategori Tanpa Batas</li>
                 <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Tema Warna Eksklusif</li>
                 <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Statistik Produktivitas</li>
                 <li class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Mode Fokus (Pomodoro)</li>
             </ul>
+            <button onclick="activatePremium()" class="w-full py-3 bg-premium hover:bg-yellow-600 text-white font-bold rounded-xl shadow-lg shadow-premium/30 transition transform hover:scale-105">Dapatkan PRO - Rp 10.000/bln</button>
+        </div>
+    </div>
+
+    <!-- MODAL: PROMO POPUP (Welcome Ad) - UPDATED DESIGN -->
+    <div id="modal-promo" class="fixed inset-0 z-[120] hidden bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up">
+        <div class="bg-white dark:bg-dark-surface w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative border border-white/20">
+            <!-- Close Btn -->
+            <button onclick="closeModal('modal-promo')" class="absolute top-3 right-3 z-20 w-8 h-8 bg-black/20 dark:bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-red-500 hover:text-white transition backdrop-blur-sm"><i class="fas fa-times text-sm"></i></button>
             
-            <button onclick="activatePremium()" class="w-full py-3 bg-premium hover:bg-yellow-600 text-white font-bold rounded-xl shadow-lg shadow-premium/30 transition transform hover:scale-105">
-                Dapatkan PRO - Rp 10.000/bln
-            </button>
+            <!-- Header Image/Gradient -->
+            <div class="h-40 bg-gradient-to-br from-[#6366f1] to-[#a855f7] flex flex-col items-center justify-center text-white relative overflow-hidden">
+                <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                <!-- Floating Elements -->
+                <div class="absolute top-4 left-4 text-3xl opacity-30 animate-pulse">✨</div>
+                <div class="absolute bottom-4 right-4 text-2xl opacity-30 animate-bounce">🔥</div>
+                
+                <div class="text-center z-10 px-4 mt-2">
+                    <h2 class="text-3xl font-black mb-1 tracking-tight drop-shadow-md">Upgrade Diri!</h2>
+                    <p class="text-xs font-medium opacity-90 tracking-wide uppercase">Buka potensi produktivitasmu</p>
+                </div>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 pt-0 text-center relative">
+                <!-- Floating Icon -->
+                <div class="flex justify-center -mt-10 mb-4 relative z-10">
+                    <div class="w-20 h-20 bg-white dark:bg-dark-surface rounded-full flex items-center justify-center shadow-xl border-4 border-white dark:border-dark-surface text-4xl transform hover:scale-110 transition duration-300 cursor-default">
+                        👑
+                    </div>
+                </div>
+                
+                <h3 class="text-2xl font-extrabold mb-2 text-gray-900 dark:text-white">Tasking PRO</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed px-2">Nikmati fitur eksklusif <span class="font-bold text-primary">tanpa batas</span> hanya dengan seharga jajan gorengan.</p>
+                
+                <!-- Features Grid -->
+                <div class="grid grid-cols-2 gap-y-3 gap-x-2 text-left text-xs mb-8 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-xl">
+                    <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> No Ads</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Unlimited Cat.</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Custom Themes</div>
+                    <div class="flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i> Priority Support</div>
+                </div>
+                
+                <!-- CTA Button -->
+                <button onclick="activatePremium()" class="w-full py-3.5 bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-[1.02] active:scale-95 text-sm">
+                    Aktifkan Sekarang - Rp 10rb
+                </button>
+                <button onclick="closeModal('modal-promo')" class="mt-4 text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline decoration-dashed underline-offset-4">
+                    Nanti saja, saya suka gratisan
+                </button>
+            </div>
         </div>
     </div>
 
@@ -364,44 +374,30 @@
                 <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-purple-600">Tugas Baru ✨</h2>
                 <button onclick="closeModal('modal-add')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-500 hover:text-red-500 transition"><i class="fas fa-times"></i></button>
             </div>
-            
             <div class="p-8 pt-4 overflow-y-auto custom-scrollbar flex-1">
                 <form id="add-task-form" class="space-y-5">
                     <div>
                         <label class="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Judul Tugas</label>
                         <input type="text" id="task-title" required class="w-full mt-2 p-3 bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary rounded-xl outline-none transition font-medium" placeholder="Contoh: Makalah Sejarah">
                     </div>
-
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Kategori</label>
-                            <div class="mt-2">
-                                <select id="task-category" required class="w-full">
-                                    <!-- Options populated by JS -->
-                                </select>
-                            </div>
+                            <div class="mt-2"><select id="task-category" required class="w-full"></select></div>
                         </div>
                         <div>
                             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Deadline</label>
                             <input type="datetime-local" id="task-deadline" required onchange="updatePriorityPreview()" class="w-full mt-2 p-3 bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary rounded-xl outline-none transition cursor-pointer font-medium dark:[color-scheme:dark]">
                         </div>
                     </div>
-
                     <div class="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
-                            <i class="fas fa-chart-line text-primary"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Prioritas</p>
-                            <p id="priority-preview" class="font-bold text-gray-700 dark:text-gray-200">Pilih deadline dulu...</p>
-                        </div>
+                        <div class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm"><i class="fas fa-chart-line text-primary"></i></div>
+                        <div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Prioritas</p><p id="priority-preview" class="font-bold text-gray-700 dark:text-gray-200">Pilih deadline dulu...</p></div>
                     </div>
-
                     <div>
                         <label class="text-xs font-bold uppercase tracking-wider text-gray-500 ml-1">Catatan</label>
                         <textarea id="task-notes" rows="3" class="w-full mt-2 p-3 bg-gray-50 dark:bg-slate-900 border-2 border-transparent focus:border-primary rounded-xl outline-none resize-none font-medium" placeholder="Detail tugas..."></textarea>
                     </div>
-
                     <div class="pt-4 flex justify-end gap-3">
                         <button type="button" onclick="closeModal('modal-add')" class="px-6 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-800 transition">Batal</button>
                         <button type="submit" class="px-8 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-1 transition-all">Simpan</button>
@@ -414,42 +410,22 @@
     <!-- MODAL: TASK DETAIL -->
     <div id="modal-detail" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-dark-surface w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col max-h-[90vh]">
-            
-            <!-- Sticky Header -->
             <div class="p-6 pb-2 flex justify-between items-start border-b border-transparent shrink-0">
                 <span id="detail-category" class="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-3 py-1 rounded-full">Kategori</span>
                 <button onclick="closeModal('modal-detail')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times text-xl"></i></button>
             </div>
-
-            <!-- Scrollable Content -->
             <div class="px-6 py-2 overflow-y-auto custom-scrollbar flex-1">
                 <h2 id="detail-title" class="text-3xl font-extrabold mb-3 leading-tight break-words">Judul Tugas</h2>
-                
                 <div class="flex flex-wrap gap-4 mb-6 text-sm text-gray-500 dark:text-gray-400">
-                    <div id="detail-deadline-wrapper" class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors">
-                        <i class="far fa-clock text-primary"></i> <span id="detail-deadline" class="font-medium">Deadline</span>
-                    </div>
-                    <div id="detail-priority-badge" class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-transparent transition-colors">
-                        <i id="detail-priority-icon" class="fas fa-flag text-primary"></i> <span id="detail-priority" class="font-bold">Prioritas</span>
-                    </div>
+                    <div id="detail-deadline-wrapper" class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg transition-colors"><i class="far fa-clock text-primary"></i> <span id="detail-deadline" class="font-medium">Deadline</span></div>
+                    <div id="detail-priority-badge" class="flex items-center gap-2 bg-gray-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-transparent transition-colors"><i id="detail-priority-icon" class="fas fa-flag text-primary"></i> <span id="detail-priority" class="font-bold">Prioritas</span></div>
                 </div>
-
-                <div class="bg-gray-50 dark:bg-slate-900 p-5 rounded-2xl mb-2 border border-gray-100 dark:border-slate-800">
-                    <p id="detail-notes" class="text-sm whitespace-pre-wrap break-words leading-relaxed text-gray-600 dark:text-gray-300">Tidak ada catatan.</p>
-                </div>
+                <div class="bg-gray-50 dark:bg-slate-900 p-5 rounded-2xl mb-2 border border-gray-100 dark:border-slate-800"><p id="detail-notes" class="text-sm whitespace-pre-wrap break-words leading-relaxed text-gray-600 dark:text-gray-300">Tidak ada catatan.</p></div>
             </div>
-
-            <!-- Sticky Footer Actions -->
             <div class="p-6 pt-4 space-y-3 bg-white dark:bg-dark-surface rounded-b-2xl shrink-0">
-                <button id="btn-gcal" class="w-full bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 py-3.5 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 group">
-                    <i class="fab fa-google text-blue-500 group-hover:scale-110 transition"></i> Add to Google Calendar
-                </button>
-                <button id="btn-complete" class="w-full bg-secondary hover:bg-secondary-hover text-white py-4 rounded-xl font-bold shadow-lg shadow-secondary/30 hover:shadow-secondary/50 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 text-lg">
-                    <i class="fas fa-check-circle"></i> Mark as Done
-                </button>
-                <button id="btn-delete" class="w-full text-red-400 text-sm py-2 hover:text-red-600 transition font-medium">
-                    Hapus Tugas
-                </button>
+                <button id="btn-gcal" class="w-full bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 py-3.5 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition flex items-center justify-center gap-2 group"><i class="fab fa-google text-blue-500 group-hover:scale-110 transition"></i> Add to Google Calendar</button>
+                <button id="btn-complete" class="w-full bg-secondary hover:bg-secondary-hover text-white py-4 rounded-xl font-bold shadow-lg shadow-secondary/30 hover:shadow-secondary/50 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 text-lg"><i class="fas fa-check-circle"></i> Mark as Done</button>
+                <button id="btn-delete" class="w-full text-red-400 text-sm py-2 hover:text-red-600 transition font-medium">Hapus Tugas</button>
             </div>
         </div>
     </div>
@@ -458,15 +434,14 @@
     <div id="modal-celebration" class="fixed inset-0 z-50 hidden bg-slate-900/90 backdrop-blur flex items-center justify-center p-4 text-center">
         <div class="transform transition-all animate-bounce-short">
             <div class="text-8xl mb-6 filter drop-shadow-lg">🎉</div>
-            <div class="text-3xl font-black text-yellow-400 mb-2 mt-4 drop-shadow-md" id="xp-gain-anim">+100 XP</div>
-            <h2 class="text-4xl font-black mb-3 text-white">Level Up! 🔥</h2>
+            <div class="text-2xl font-bold text-yellow-400 mb-2 mt-4" id="xp-gain-anim">+100 XP</div>
+            <h2 class="text-4xl font-black mb-3 text-white">Slay! 🔥</h2>
             <p id="celebration-msg" class="text-gray-300 mb-8 text-xl font-medium max-w-xs mx-auto">Tugas selesai.</p>
             <button onclick="closeCelebration()" class="px-10 py-4 bg-white text-primary font-bold rounded-full hover:scale-105 transition shadow-xl shadow-white/20">Lanjut Gan!</button>
         </div>
     </div>
 
     <script>
-        // CONFIG
         const PRIORITY_STYLES = {
             tinggi: { badge: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200", dot: "bg-red-500", strip: "bg-red-500", label: "TINGGI" },
             sedang: { badge: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200", dot: "bg-yellow-500", strip: "bg-yellow-500", label: "SEDANG" },
@@ -483,9 +458,7 @@
             currentDate: new Date(),
             currentTaskView: null,
             isPremium: localStorage.getItem('focusTask_premium') === 'true',
-            // GAMIFICATION STATE
-            xp: parseInt(localStorage.getItem('focusTask_xp')) || 0,
-            level: parseInt(localStorage.getItem('focusTask_level')) || 1
+            adDismissedAt: parseInt(localStorage.getItem('focusTask_ad_dismissed') || 0)
         };
 
         const els = {
@@ -498,96 +471,62 @@
             filterSort: document.getElementById('filter-sort'),
         };
 
-        // --- GAMIFICATION LOGIC ---
-        // Define Titles based on Level
-        const TITLES = [
-            { lvl: 1, name: "Novice Tasker", color: "border-gray-200" },
-            { lvl: 3, name: "Apprentice", color: "border-green-400" },
-            { lvl: 5, name: "Productivity Pro", color: "border-blue-400" },
-            { lvl: 10, name: "Task Master", color: "border-purple-400" },
-            { lvl: 20, name: "Grandmaster", color: "border-yellow-400" },
-            { lvl: 50, name: "Godlike", color: "border-red-500" }
-        ];
-
-        function getTitleData(level) {
-            return TITLES.slice().reverse().find(t => level >= t.lvl) || TITLES[0];
-        }
-
-        function updateXPDisplay() {
-            const levelEl = document.getElementById('level-number');
-            const titleEl = document.getElementById('user-title');
-            const avatarContainer = document.getElementById('avatar-container');
-            const xpText = document.getElementById('xp-text');
-            const xpBar = document.getElementById('xp-bar');
-            
-            const nextLevelXP = state.level * 500;
-            const progress = (state.xp / nextLevelXP) * 100;
-            const currentTitleData = getTitleData(state.level);
-
-            levelEl.textContent = state.level;
-            titleEl.textContent = currentTitleData.name;
-            
-            avatarContainer.className = avatarContainer.className.replace(/border-\w+-\d+/g, '');
-            avatarContainer.classList.add(currentTitleData.color); 
-            if(!avatarContainer.classList.contains('border-4')) avatarContainer.classList.add('border-4');
-
-
-            xpText.textContent = `${state.xp}/${nextLevelXP} XP`;
-            xpBar.style.width = `${Math.min(progress, 100)}%`;
-        }
-
-        function addXP(amount) {
-            state.xp += amount;
-            const nextLevelXP = state.level * 500;
-            
-            if (state.xp >= nextLevelXP) {
-                state.level++;
-                state.xp -= nextLevelXP; 
-                
-                const newTitle = getTitleData(state.level);
-                alert(`LEVEL UP! Selamat datang di Level ${state.level} 🎉\nGelar Baru: ${newTitle.name}`);
-            }
-            
-            localStorage.setItem('focusTask_xp', state.xp);
-            localStorage.setItem('focusTask_level', state.level);
-            updateXPDisplay();
-        }
-
-        // ... FREEMIUM & THEME Logic ...
         function checkPremiumFeature(featureName) {
             if (state.isPremium) return true;
             if (featureName === 'add_category' && state.categories.length >= 3) { openModal('modal-premium'); return false; }
             if (featureName === 'custom_theme') { openModal('modal-premium'); return false; }
             return true;
         }
+
         function activatePremium() {
             alert("Terima kasih! Anda sekarang user PRO. 🎉");
             state.isPremium = true;
             localStorage.setItem('focusTask_premium', 'true');
             closeModal('modal-premium');
+            closeModal('modal-promo');
             updateUIForPremium();
-            if (!document.getElementById('modal-category').classList.contains('hidden')) {
-                openCategoryModal();
+            if (!document.getElementById('modal-category').classList.contains('hidden')) openCategoryModal();
+        }
+
+        function checkAdStatus() {
+            const adBanner = document.getElementById('ad-banner');
+            if (!adBanner) return;
+            if (state.isPremium) { adBanner.classList.add('hidden'); return; }
+            const now = Date.now();
+            const timeDiff = now - state.adDismissedAt;
+            const tenMinutes = 10 * 60 * 1000;
+            if (state.adDismissedAt === 0 || timeDiff > tenMinutes) { adBanner.classList.remove('hidden'); } 
+            else { adBanner.classList.add('hidden'); }
+        }
+
+        function dismissAd() {
+            const adBanner = document.getElementById('ad-banner');
+            if (adBanner) {
+                adBanner.classList.add('hidden');
+                state.adDismissedAt = Date.now();
+                localStorage.setItem('focusTask_ad_dismissed', state.adDismissedAt);
             }
+        }
+
+        function showPromoModal() {
+            if (!state.isPremium) { setTimeout(() => { openModal('modal-promo'); }, 1000); }
         }
 
         function updateUIForPremium() {
             const badge = document.getElementById('pro-badge');
             const limitInfo = document.getElementById('category-limit-info');
             const banner = document.getElementById('premium-category-banner');
-            const adBanner = document.getElementById('ad-banner'); // Referensi ke elemen iklan
-
             if (state.isPremium) {
                 if (badge) badge.classList.remove('hidden');
                 if (limitInfo) limitInfo.textContent = "User PRO: Kategori Tanpa Batas ✨";
                 if (banner) banner.classList.add('hidden');
-                if (adBanner) adBanner.classList.add('hidden'); // Sembunyikan iklan jika Premium
             } else {
                 if (badge) badge.classList.add('hidden');
                 if (state.categories.length >= 3 && banner) banner.classList.remove('hidden');
-                if (adBanner) adBanner.classList.remove('hidden'); // Tampilkan iklan jika Gratis
             }
+            checkAdStatus(); 
         }
+        
         function togglePremiumStatus() {
             if(confirm("Dev Mode: Toggle Premium Status?")) {
                 state.isPremium = !state.isPremium;
@@ -595,6 +534,7 @@
                 location.reload();
             }
         }
+
         function changeColorTheme(themeName) {
             if (themeName && !checkPremiumFeature('custom_theme')) return;
             document.body.className = document.body.className.replace(/theme-\w+/g, '');
@@ -603,7 +543,6 @@
             localStorage.setItem('focusTask_color', themeName);
         }
 
-        // ... CUSTOM SELECT ...
         function initCustomSelects() {
              document.querySelectorAll('.custom-select-wrapper').forEach(w => {
                 const s = w.querySelector('select');
@@ -654,7 +593,6 @@
                         }, 200);
                     }
                 };
-
                 Array.from(select.options).forEach(option => {
                     const div = document.createElement('div');
                     div.className = "px-4 py-3 cursor-pointer hover:bg-primary/10 hover:text-primary dark:hover:bg-slate-700 transition-colors text-sm text-gray-600 dark:text-gray-300 flex items-center justify-between";
@@ -669,18 +607,15 @@
                     });
                     optionsDiv.appendChild(div);
                 });
-
                 trigger.addEventListener('click', (e) => {
                     e.stopPropagation();
                     toggleMenu();
                 });
-
                 optionsDiv.classList.add('custom-dropdown-options');
                 select.parentNode.insertBefore(wrapper, select);
                 wrapper.appendChild(select);
                 wrapper.appendChild(trigger);
                 wrapper.appendChild(optionsDiv);
-                
                 document.addEventListener('click', (e) => {
                     if (!wrapper.contains(e.target)) {
                         toggleMenu(false);
@@ -689,7 +624,6 @@
             });
         }
 
-        // ... MAIN INIT ...
         function init() {
             applyTheme();
             if (state.colorTheme) document.body.classList.add(state.colorTheme);
@@ -699,10 +633,11 @@
             updateClockAndIcon();
             updateUIForPremium(); 
             startRealTimePriorityCheck();
-            updateXPDisplay(); // Init XP
+            setInterval(checkAdStatus, 10000);
+            checkAdStatus(); 
+            showPromoModal();
         }
 
-        // ... REALTIME CHECK ...
         function startRealTimePriorityCheck() {
             setInterval(() => {
                 let changed = false;
@@ -722,42 +657,22 @@
         function animatePriorityChange(id, newPrio) {
             const card = document.getElementById(`task-${id}`);
             if (!card) return;
-
             const styles = PRIORITY_STYLES[newPrio];
-            
-            // Elements to update
             const strip = card.querySelector('.priority-strip');
             const badge = card.querySelector('.priority-badge');
             const dot = card.querySelector('.priority-dot');
             const label = card.querySelector('.priority-label');
-            const footer = card.querySelector('.priority-footer'); // For late text color
-
-            // Apply transition class
-            [strip, badge, dot, footer].forEach(el => {
-                if(el) el.classList.add('priority-changed-anim');
-            });
-
-            // Update classes
+            const footer = card.querySelector('.priority-footer');
+            [strip, badge, dot, footer].forEach(el => { if(el) el.classList.add('priority-changed-anim'); });
             if(strip) strip.className = `priority-strip absolute left-0 top-4 bottom-4 w-1.5 rounded-r-lg transition-colors duration-1000 ${styles.strip}`;
             if(badge) badge.className = `priority-badge inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-colors duration-1000 ${styles.badge}`;
             if(dot) dot.className = `priority-dot w-1.5 h-1.5 rounded-full transition-colors duration-1000 ${styles.dot}`;
             if(label) label.textContent = styles.label;
-
-            // Late text update
             if(footer) {
-                if(newPrio === 'telat') {
-                    footer.className = "priority-footer pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm transition-colors duration-1000";
-                } else {
-                    footer.className = "priority-footer pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm font-medium transition-colors duration-1000";
-                }
+                if(newPrio === 'telat') footer.className = "priority-footer pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm transition-colors duration-1000";
+                else footer.className = "priority-footer pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm font-medium transition-colors duration-1000";
             }
-
-            // Remove anim class
-            setTimeout(() => {
-                 [strip, badge, dot, footer].forEach(el => {
-                    if(el) el.classList.remove('priority-changed-anim');
-                });
-            }, 1000);
+            setTimeout(() => { [strip, badge, dot, footer].forEach(el => { if(el) el.classList.remove('priority-changed-anim'); }); }, 1000);
         }
 
         function updateClockAndIcon() {
@@ -834,21 +749,18 @@
             const select = document.getElementById('task-category');
             if (!select) return;
             select.innerHTML = '';
-            
             // FIX: Ensure there's a default selection if available
             state.categories.forEach((cat, index) => {
                 const option = document.createElement('option');
                 option.value = cat;
                 option.textContent = cat;
-                if (index === 0) option.selected = true; // Select first by default
+                if (index === 0) option.selected = true; 
                 select.appendChild(option);
             });
-            
             // Trigger update
             if (state.categories.length > 0) {
                 select.value = state.categories[0];
             }
-
             initCustomSelects();
         }
 
@@ -875,21 +787,20 @@
             el.textContent = style.label + (p==='telat'?' ⚠️':''); 
             el.className = `font-bold ${c}`;
         }
+        
+        function addXP(amount) {
+            // Keep empty placeholder to satisfy logic call if needed in future gamification restore
+        }
 
         els.addTaskForm.addEventListener('submit', (e) => {
             e.preventDefault();
-
-             // FIX: Validasi Manual Kategori
             const titleVal = document.getElementById('task-title').value;
             const categoryVal = document.getElementById('task-category').value;
             const deadlineVal = document.getElementById('task-deadline').value;
-
             if (!titleVal) { alert("Judul tugas harus diisi!"); return; }
             if (!categoryVal) { alert("Mohon pilih kategori!"); return; }
             if (!deadlineVal) { alert("Deadline harus diisi!"); return; }
-
             const autoPriority = calculatePriority(deadlineVal);
-
             const newTask = {
                 id: Date.now(),
                 title: titleVal,
@@ -928,7 +839,6 @@
                 container.className = "space-y-8 transition-all duration-500 ease-in-out transform origin-top pb-12"; 
                 let cats = [...new Set([...state.categories, ...tasks.map(t => t.category)])].sort();
                 
-                // Sort Categories
                 cats.sort((a, b) => {
                     if (sort === 'alpha') return a.localeCompare(b);
                     if (sort === 'most_tasks') {
@@ -948,7 +858,6 @@
 
                 cats.forEach(cat => {
                     const tInCat = tasks.filter(t => t.category === cat);
-                    // Sort inside folder
                     tInCat.sort((a,b) => sort === 'deadline' ? new Date(a.deadline) - new Date(b.deadline) : a.title.localeCompare(b.title));
                     
                     const sec = document.createElement('div');
@@ -1065,58 +974,7 @@
 
         // ... (Other standard functions: markAsDone, delete, etc. same as before) ...
         function deleteTask(id) { if(confirm("Hapus?")) { state.tasks = state.tasks.filter(t => t.id !== id); saveTasks(); renderTasks(); renderCalendar(); closeModal('modal-detail'); } }
-        
-        function markAsDone(id) { 
-            const t = state.tasks.find(x => x.id === id); 
-            if(t) { 
-                t.completed = true; 
-                saveTasks(); 
-                
-                // --- LOGIKA POIN DINAMIS (UPDATED) ---
-                // Hitung prioritas saat ini (real-time) untuk menentukan poin
-                // Filosofi: Reward tertinggi untuk user yang mengerjakan jauh-jauh hari (Proaktif)
-                const currentPriority = calculatePriority(t.deadline);
-                let xpGained = 0;
-                let message = "";
-
-                if (currentPriority === 'rendah') {
-                    xpGained = 200;
-                    message = "Luar biasa! Kamu sangat terencana.";
-                } else if (currentPriority === 'sedang') {
-                    xpGained = 150;
-                    message = "Kerja bagus! Tetap konsisten.";
-                } else if (currentPriority === 'tinggi') {
-                    xpGained = 100;
-                    message = "Fuh! Untung selesai sebelum deadline.";
-                } else { // Telat
-                    xpGained = 50; 
-                    message = "Lebih baik terlambat daripada tidak sama sekali.";
-                }
-
-                addXP(xpGained); 
-                
-                closeModal('modal-detail'); 
-                
-                // Update tampilan modal celebration
-                const xpAnimEl = document.getElementById('xp-gain-anim');
-                xpAnimEl.textContent = `+${xpGained} XP`;
-                
-                // Reset animasi agar bisa play ulang
-                xpAnimEl.classList.remove('animate-bounce');
-                void xpAnimEl.offsetWidth; // trigger reflow
-                xpAnimEl.classList.add('animate-bounce');
-
-                // Custom message berdasarkan poin
-                const msgEl = document.getElementById('celebration-msg');
-                msgEl.textContent = message;
-
-                document.getElementById('modal-celebration').classList.remove('hidden'); 
-                
-                renderTasks(); 
-                renderCalendar(); 
-            } 
-        }
-        
+        function markAsDone(id) { const t = state.tasks.find(x => x.id === id); if(t) { t.completed = true; saveTasks(); closeModal('modal-detail'); document.getElementById('modal-celebration').classList.remove('hidden'); renderTasks(); renderCalendar(); } }
         function closeCelebration() { document.getElementById('modal-celebration').classList.add('hidden'); }
         function addToGoogleCalendar(t) {
             const s = new Date(t.deadline).toISOString().replace(/-|:|\.\d\d\d/g, "");
@@ -1128,15 +986,15 @@
             document.getElementById('calendar-month-year').textContent = new Date(y, m).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
             const grid = els.calendarBody; grid.innerHTML = '';
             const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
-            for (let i=0; i<firstDay; i++) { const c = document.createElement('div'); c.className = "calendar-day bg-gray-50 dark:bg-slate-900/50 opacity-50"; grid.appendChild(c); }
+            for (let i=0; i<firstDay; i++) { const c = document.createElement('div'); c.className = "calendar-day bg-transparent border-none"; grid.appendChild(c); }
             for (let d=1; d<=daysInMonth; d++) {
                 const c = document.createElement('div'); c.className = "calendar-day relative cursor-pointer flex flex-col items-center justify-start";
                 c.innerHTML = `<span class="text-xs font-bold p-1 text-gray-500 dark:text-gray-400">${d}</span>`;
-                const today = new Date(); if (d === today.getDate() && m === today.getMonth() && y === today.getFullYear()) c.classList.add('ring-2', 'ring-primary');
+                const today = new Date(); if (d === today.getDate() && m === today.getMonth() && y === today.getFullYear()) c.classList.add('ring-2', 'ring-primary', 'bg-primary/5');
                 const tCount = state.tasks.filter(t => !t.completed && new Date(t.deadline).getDate()===d && new Date(t.deadline).getMonth()===m).length;
                 if(tCount > 0) {
                     const dots = document.createElement('div'); dots.className = "flex gap-1 mt-1";
-                    for(let k=0; k<Math.min(tCount, 3); k++) { const dot = document.createElement('span'); dot.className = "w-1.5 h-1.5 rounded-full bg-primary"; dots.appendChild(dot); }
+                    for(let k=0; k<Math.min(tCount, 3); k++) { const dot = document.createElement('span'); dot.className = "task-dot bg-primary"; dots.appendChild(dot); }
                     c.appendChild(dots);
                 }
                 grid.appendChild(c);
@@ -1149,21 +1007,10 @@
             const select = document.getElementById('filter-sort');
             const currentVal = select.value;
             select.innerHTML = ''; 
-            // Only add 'most_tasks' for folder view
-            const opts = [
-                {v:'deadline', t:'Deadline Terdekat'},
-                {v:'alpha', t:'Abjad (A-Z)'}
-            ];
+            const opts = [{v:'deadline', t:'Deadline Terdekat'}, {v:'alpha', t:'Abjad (A-Z)'}];
             if(view === 'folder') opts.push({v:'most_tasks', t:'Tugas Terbanyak'});
-            
-            opts.forEach(o => {
-                const op = document.createElement('option');
-                op.value = o.v; op.text = o.t;
-                select.appendChild(op);
-            });
-            
-            if (select.querySelector(`option[value="${currentVal}"]`)) select.value = currentVal;
-            else select.selectedIndex = 0;
+            opts.forEach(o => { const op = document.createElement('option'); op.value = o.v; op.text = o.t; select.appendChild(op); });
+            if (select.querySelector(`option[value="${currentVal}"]`)) select.value = currentVal; else select.selectedIndex = 0;
             initCustomSelects();
         }
 
@@ -1174,56 +1021,27 @@
             const viewList = document.getElementById('view-list');
             const viewCal = document.getElementById('view-calendar');
             const filterCont = document.getElementById('filter-container');
-            
             updateSortOptions(viewName);
-
             [btnList, btnFolder, btnCal].forEach(btn => btn.className = "flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-700 dark:hover:text-gray-300");
             state.viewMode = viewName;
             document.getElementById(`btn-view-${viewName}`).className = "flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all bg-white dark:bg-slate-700 text-primary shadow-sm";
-
             const containerList = document.getElementById('view-list');
             const containerCal = document.getElementById('view-calendar');
-            
-            // Determine Active & Next Container
             let activeContainer = !containerList.classList.contains('hidden') ? containerList : containerCal;
             let nextContainer = (viewName === 'calendar') ? containerCal : containerList;
-
-            // Same transition classes for all views
             const hiddenState = ['opacity-0', 'scale-95'];
             const visibleState = ['opacity-100', 'scale-100'];
-
-            // 1. Fade Out Active
             activeContainer.classList.remove(...visibleState);
             activeContainer.classList.add(...hiddenState);
-            
-            // Handle filter visibility
-            if(viewName === 'calendar') {
-                filterCont.classList.remove(...visibleState);
-                filterCont.classList.add(...hiddenState);
-            }
-
+            if(viewName === 'calendar') { filterCont.classList.remove(...visibleState); filterCont.classList.add(...hiddenState); }
             setTimeout(() => {
                 activeContainer.classList.add('hidden');
                 nextContainer.classList.remove('hidden');
-                
-                if(viewName === 'calendar') {
-                     filterCont.classList.add('hidden');
-                } else {
-                     filterCont.classList.remove('hidden');
-                     // Force reflow/render before fading in filter
-                     filterCont.classList.remove(...hiddenState); 
-                     filterCont.classList.add(...visibleState);
-                }
-
-                if(viewName === 'calendar') renderCalendar();
-                else renderTasks(); 
-
-                // 2. Fade In Next
-                requestAnimationFrame(() => {
-                    nextContainer.classList.remove(...hiddenState);
-                    nextContainer.classList.add(...visibleState);
-                });
-            }, 300); // 300ms matches CSS transition time
+                if(viewName === 'calendar') { filterCont.classList.add('hidden'); } 
+                else { filterCont.classList.remove('hidden'); filterCont.classList.remove(...hiddenState); filterCont.classList.add(...visibleState); }
+                if(viewName === 'calendar') renderCalendar(); else renderTasks(); 
+                requestAnimationFrame(() => { nextContainer.classList.remove(...hiddenState); nextContainer.classList.add(...visibleState); });
+            }, 300);
         }
 
         function toggleTheme() { state.darkMode = !state.darkMode; localStorage.setItem('focusTask_theme', state.darkMode ? 'dark':'light'); applyTheme(); }
