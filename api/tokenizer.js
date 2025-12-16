@@ -1,19 +1,20 @@
 const midtransClient = require('midtrans-client');
 
-export default async function handler(req, res) {
+// GANTI BAGIAN INI: Pakai module.exports agar tidak error
+module.exports = async (req, res) => {
   // --- KONFIGURASI MIDTRANS ---
-  // Ganti string di bawah ini dengan Server Key dari Midtrans Dashboard > Settings > Access Keys
-  const SERVER_KEY = "Mid-server-zg4SXyN98sZhCQS_-UHiXOfb"; 
+  // Pastikan Server Key ini benar (dari Dashboard Midtrans > Settings > Access Keys)
+  const SERVER_KEY = process.env.MIDTRANS_SERVER_KEY;
 
   // Inisialisasi Snap Client
   let snap = new midtransClient.Snap({
-    isProduction: false, // Ubah ke true jika sudah live production
+    isProduction: false,
     serverKey: SERVER_KEY
   });
 
   if (req.method === 'POST') {
     try {
-      const { id, productName, price, quantity } = req.body;
+      const { id, productName, price } = req.body;
 
       let parameter = {
         "transaction_details": {
@@ -29,7 +30,6 @@ export default async function handler(req, res) {
             "quantity": 1,
             "name": productName
         }],
-        // Data pelanggan dummy (bisa disesuaikan jika ada form login)
         "customer_details": {
             "first_name": "Tasking",
             "last_name": "User",
@@ -38,8 +38,6 @@ export default async function handler(req, res) {
       };
 
       const transaction = await snap.createTransaction(parameter);
-      
-      // Kirim token kembali ke Frontend (HTML)
       res.status(200).json({ token: transaction.token });
 
     } catch (error) {
@@ -47,7 +45,6 @@ export default async function handler(req, res) {
       res.status(500).json({ error: error.message });
     }
   } else {
-    // Handle method selain POST
     res.setHeader('Allow', ['POST']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
